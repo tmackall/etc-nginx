@@ -1,0 +1,30 @@
+# upstream server for gunicorn
+upstream app_servers {
+  server localhost:8051;
+}
+
+# nginx server for the host
+server {
+  listen 80;
+
+#  server_name mackall.com www.mackall.com;
+
+  root /django/django_home/devices/;
+
+  access_log /var/log/nginx/devices_access.log;
+  error_log /var/log/nginx/devices_error.log;
+
+  # try to serve a static file and if it doesn't exist, pass to gunicorn
+  try_files $uri @gunicorn;
+
+  # rules for gunicorn
+  location / {
+    proxy_pass http://app_servers;
+    proxy_redirect off;
+    proxy_read_timeout 5m;
+    proxy_connect_timeout 300s;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Fowarded-For $proxy_add_x_forwarded_for;
+  }
+}
